@@ -14,7 +14,7 @@ class Audio_video_Model(nn.Module):
         self.fusion_type = fusion_type
         self.num_class = classes_num
         self.video_encoder = video_backbone
-        old_pretrained_video_encoder = torch.load('/mnt/fast/nobackup/users/mc02229/FishMM/pretrained_models/audio-visual_pretrainedmodel/video_best.pt')['model_state_dict']
+        old_pretrained_video_encoder = torch.load('/root/shared-nvme/weights/audio-visual_pretrainedmodel/video_best.pt')['model_state_dict']
         dict_new = self.video_encoder.state_dict().copy()
         pretrained_video_encoder = {k.replace('backbone.', ''): v for k,v in old_pretrained_video_encoder.items()}
         trained_list = [i for i in pretrained_video_encoder.keys() if not ('head' in i or 'pos' in i)]
@@ -24,7 +24,7 @@ class Audio_video_Model(nn.Module):
 
         self.audio_encoder = audio_backbone
         self.audio_frontend = audio_frontend
-        old_pretrained_audio_encoder = torch.load('/mnt/fast/nobackup/users/mc02229/FishMM/pretrained_models/audio-visual_pretrainedmodel/audio_best.pt')['model_state_dict']
+        old_pretrained_audio_encoder = torch.load('/root/shared-nvme/weights/audio-visual_pretrainedmodel/audio_best.pt')['model_state_dict']
         dict_new = self.audio_encoder.state_dict().copy()
         dict_new_frontend = self.audio_frontend.state_dict().copy()
         pretrained_audio_encoder = {k.replace('backbone.', ''): v for k,v in old_pretrained_audio_encoder.items()}

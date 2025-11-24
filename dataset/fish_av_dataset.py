@@ -1,8 +1,9 @@
 import warnings
 warnings.filterwarnings("ignore")
+import decord
+decord.bridge.set_bridge("torch")
+import dtk.transforms as dtf
 # import decord
-# decord.bridge.set_bridge("torch")
-# import dtk.transforms as dtf
 import random
 from torchvision import transforms
 import glob
@@ -30,7 +31,8 @@ def get_video_name(split='strong'):
     params: str
         middle, none, strong, weak
     """
-    path = '/mnt/fast/nobackup/scratch4weeks/mc02229/video_dataset'
+    # path = '/mnt/fast/nobackup/scratch4weeks/mc02229/video_dataset'
+    path = '/root/shared-nvme/video_dataset'
     video = []
     l1 = os.listdir(path)
     for dir in l1:
@@ -144,7 +146,7 @@ class Fish_Video_Dataset(Dataset):
         self.seed = seed
         self.sample_rate = sample_rate
         self.split = split
-        train_v_dict, test_v_dict, val_v_dict = data_generator(self.seed, test_sample_per_class=700)
+        train_v_dict, test_v_dict, val_v_dict = data_generator(self.seed, test_sample_per_class=178)
         if self.split == 'train':
             self.data_dict = train_v_dict
         elif self.split == 'test':
@@ -153,23 +155,24 @@ class Fish_Video_Dataset(Dataset):
             self.data_dict = val_v_dict
         self.epoch = epoch
         #
-        # transform_chain = [dtf.ToTensorVideo()]
-        # transform_chain += [dtf.NormalizeVideo([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])]
-        # transform_chain += [CenterCropVideo(196)]
-        # transform_chain += [RandomHorizontalFlipVideo(0.5)]
+        transform_chain = [dtf.ToTensorVideo()]
+        transform_chain += [dtf.NormalizeVideo([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])]
+        transform_chain += [CenterCropVideo(196)]
+        transform_chain += [RandomHorizontalFlipVideo(0.5)]
 
-        # # TODO add data augmentation from dtk
-        # self.video_transform = transforms.Compose(transform_chain)
+        # TODO add data augmentation from dtk
+        self.video_transform = transforms.Compose(transform_chain)
 
     def __len__(self):
         return len(self.data_dict)
 
     def __getitem__(self, index):
-        save_path = '/mnt/fast/nobackup/scratch4weeks/mc02229/Fish_video_dataset/Fish_video_1/'
+        save_path = '/root/shared-nvme/Fish_video_dataset/Fish_video_1/'
+        
         #################################################
         # video_name, target = self.data_dict[index]
         # target = np.eye(4)[target]
-        # random sample one frame from video
+        # # random sample one frame from video
         # vr = decord.VideoReader(video_name, height=250, width=250)
         # full_vid_length = len(vr)
         # video_frames = vr.get_batch(range(0, full_vid_length))
@@ -203,7 +206,7 @@ def collate_fn(batch):
     video_name = [data['video_name'] for data in batch]
     vf = torch.stack([data['video_form'] for data in batch])
     # vf = vf.squeeze(1)
-    vf = vf.permute(0, 2, 1, 3, 4)
+    # vf = vf.permute(0, 2, 1, 3, 4)
     target = torch.FloatTensor(np.array(target))
     data_dict = {'video_name': video_name, 'video_form': vf, 'target': target, 'audio_name': wav_name, 'waveform': wav}
 
@@ -215,7 +218,7 @@ def get_dataloader(split,
                    sample_rate,
                    seed,
                    shuffle=False,
-                   drop_last=False,
+                   drop_last=True,
                     epoch=0,
                    num_workers=0):
     dataset = Fish_Video_Dataset(split=split, seed=seed, sample_rate=sample_rate, epoch=epoch)
