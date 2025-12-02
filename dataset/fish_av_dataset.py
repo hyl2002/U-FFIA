@@ -146,7 +146,7 @@ class Fish_Video_Dataset(Dataset):
         self.seed = seed
         self.sample_rate = sample_rate
         self.split = split
-        train_v_dict, test_v_dict, val_v_dict = data_generator(self.seed, test_sample_per_class=178)
+        train_v_dict, test_v_dict, val_v_dict = data_generator(self.seed, test_sample_per_class=700)
         if self.split == 'train':
             self.data_dict = train_v_dict
         elif self.split == 'test':
@@ -170,27 +170,27 @@ class Fish_Video_Dataset(Dataset):
         save_path = '/root/shared-nvme/Fish_video_dataset/Fish_video_1/'
         
         #################################################
-        video_name, target = self.data_dict[index]
-        target = np.eye(4)[target]
-        # random sample one frame from video
-        vr = decord.VideoReader(video_name, height=250, width=250)
-        full_vid_length = len(vr)
-        video_frames = vr.get_batch(range(0, full_vid_length))
-        #修改为一个视频等间隔帧数抽取16帧
-        # sample 20 frames evenly across the video
-        if full_vid_length >= 20:
-            # get 20 indices evenly spaced from 0 to full_vid_length-1
-            Y = np.round(np.linspace(0, full_vid_length - 1, 20)).astype(int)
-        else:
-            # if fewer than 20 frames, repeat frames to make length 20
-            base_idx = np.arange(0, full_vid_length)
-            Y = np.resize(base_idx, 20)
-        vf = video_frames[Y, ...]
-        vf = self.video_transform(vf)
+        # video_name, target = self.data_dict[index]
+        # target = np.eye(4)[target]
+        # # random sample one frame from video
+        # vr = decord.VideoReader(video_name, height=250, width=250)
+        # full_vid_length = len(vr)
+        # video_frames = vr.get_batch(range(0, full_vid_length))
+        # #修改为一个视频等间隔帧数抽取16帧
+        # # sample 20 frames evenly across the video
+        # if full_vid_length >= 20:
+        #     # get 20 indices evenly spaced from 0 to full_vid_length-1
+        #     Y = np.round(np.linspace(0, full_vid_length - 1, 20)).astype(int)
+        # else:
+        #     # if fewer than 20 frames, repeat frames to make length 20
+        #     base_idx = np.arange(0, full_vid_length)
+        #     Y = np.resize(base_idx, 20)
+        # vf = video_frames[Y, ...]
+        # vf = self.video_transform(vf)
         #################################################
-        data_dict = {'video_name': video_name, 'video_form': vf, 'target': target}
-        os.makedirs(os.path.join(save_path, str(self.epoch), self.split), exist_ok=True)
-        save_pickle(data_dict, os.path.join(save_path, str(self.epoch), self.split, '%s.pkl' % index))
+        # data_dict = {'video_name': video_name, 'video_form': vf, 'target': target}
+        # os.makedirs(os.path.join(save_path, str(self.epoch), self.split), exist_ok=True)
+        # save_pickle(data_dict, os.path.join(save_path, str(self.epoch), self.split, '%s.pkl' % index))
 
         #################################################
         pickle_path = os.path.join(save_path, str(self.epoch), self.split, '%s.pkl' % index)
