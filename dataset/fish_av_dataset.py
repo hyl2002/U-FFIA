@@ -176,15 +176,15 @@ class Fish_Video_Dataset(Dataset):
         vr = decord.VideoReader(video_name, height=250, width=250)
         full_vid_length = len(vr)
         video_frames = vr.get_batch(range(0, full_vid_length))
-        #修改为一个视频等间隔帧数抽取20帧
-        # sample 20 frames evenly across the video
-        if full_vid_length >= 20:
+        #修改为一个视频等间隔帧数抽取16帧
+        # sample 16 frames evenly across the video
+        if full_vid_length >= 16:
             # get 20 indices evenly spaced from 0 to full_vid_length-1
-            Y = np.round(np.linspace(0, full_vid_length - 1, 20)).astype(int)
+            Y = np.round(np.linspace(0, full_vid_length - 1, 16)).astype(int)
         else:
             # if fewer than 20 frames, repeat frames to make length 20
             base_idx = np.arange(0, full_vid_length)
-            Y = np.resize(base_idx, 20)
+            Y = np.resize(base_idx, 16)
         vf = video_frames[Y, ...]
         vf = self.video_transform(vf)
         #################################################
