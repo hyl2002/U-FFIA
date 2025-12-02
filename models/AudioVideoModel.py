@@ -143,13 +143,18 @@ class Audio_video_Model(nn.Module):
             audio_embedding = self.att_linear(audio_embed)  # audio_embedding[20, 6, 512]
             fused_video_embedding = torch.cat((video_embedding, self.Bottleneck), dim=1)  # size[20, 40, 512]
             for layer in self.layers:
-                video_output = layer(fused_video_embedding, s_mask=None)
+                fused_video_embedding = layer(fused_video_embedding, s_mask=None)
+            
+            video_output = fused_video_embedding
             Bottleneck_fused = video_output[:, 36:, :]  # size[20, 6, 512]
             video_fused = video_output[:, :36, :]
+            
             fused_audio_embedding = torch.cat((audio_embedding, Bottleneck_fused), dim=1)
             for layer in self.layers:
-                output = layer(fused_audio_embedding, s_mask=None)  # [20, 10, 512]
-            Bottleneck_fused = output[:, 6:, :] 
+                fused_audio_embedding = layer(fused_audio_embedding, s_mask=None)  # [20, 10, 512]
+            
+            output = fused_audio_embedding
+            # Bottleneck_fused = output[:, 6:, :] 
             audio_fused = output[:, :6, :]
             # dec_output, dec_slf_attn = self.slf_attn(
             #     video_embedding, self.Bottleneck, self.Bottleneck, mask=None)
