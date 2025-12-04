@@ -111,7 +111,7 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
     last_5_mAP = []
 
     for ep, path in last_5_epochs:
-        model.load_state_dict(torch.load(path)['model_state_dict'])
+        model.load_state_dict(torch.load(path, weights_only=False)['model_state_dict'])
         model.eval()
         stats = evaluator.evaluate_av(test_loader)
         acc = np.mean(stats['accuracy'])
