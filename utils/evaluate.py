@@ -127,7 +127,12 @@ class Evaluator(object):
 
         message = classification_report(target_acc, clipwise_output_acc)
         message = '\n' + message
+
+        # 新增 Recall 和 F1
+        recall = recall_score(target_acc, clipwise_output_acc, average='macro')
+        f1 = f1_score(target_acc, clipwise_output_acc, average='macro')
+        
         statistics = {'average_precision': average_precision, 'accuracy': acc, 'auc': auc, 'message': message,
-                      'confu_matrix': cm}
+                      'confu_matrix': cm, 'recall': recall, 'f1': f1}
 
         return statistics

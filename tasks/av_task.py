@@ -33,7 +33,7 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
     wb = Workbook()
     ws = wb.active
     ws.title = "Metrics"
-    ws.append(["epoch", "train_loss", "val_acc", "val_mAP", "test_acc", "test_mAP"])  # 表头
+    ws.append(["epoch", "train_loss", "val_acc", "val_mAP", "test_acc", "test_mAP","val_recall","val_f1"])  # 表头
 
     for epoch in range(max_epoch):
         mean_loss = 0
@@ -61,6 +61,8 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
             val_cm = val_statistics['confu_matrix']
             val_mAP = np.mean(val_statistics['average_precision'])
             val_acc = np.mean(val_statistics['accuracy'])
+            val_recall = val_statistics['recall']  # 新增
+            val_f1 = val_statistics['f1']          # 新增
             val_message = val_statistics['message']
 
             if val_acc > best_acc:
@@ -79,9 +81,10 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
             model.train()
 
             # --------------- 写入 Excel（测试值暂空） ---------------
-            ws.append([epoch, epoch_loss, val_acc, val_mAP, None, None])
+            ws.append([epoch, epoch_loss, val_acc, val_mAP, None, None, val_recall, val_f1])
 
-        logger.info(f'val_best_acc: {best_acc}, best mAP:{best_mAP}, best_epoch: {best_epoch}')
+        logger.info(f'val_best_acc: {best_acc}, best mAP:{best_mAP}, best_epoch: {best_epoch}, current_val_acc: {val_acc},f1: {val_f1},recall: {val_recall}')
+
 
     # ------------------------- 测试 best model -------------------------
     logger.info('Evaluate on the Test dataset')
