@@ -2,6 +2,7 @@ from sklearn import metrics
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import numpy as np
 from utils.pytorch_utils import forward_audio, forward_video, forward_av
+from sklearn.metrics import recall_score, f1_score
 
 
 class Evaluator(object):
