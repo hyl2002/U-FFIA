@@ -4,7 +4,7 @@ Modality: 'audio_video'
 
 Training:
     Batch_size: 20
-    Max_epoch: 180
+    Max_epoch: 160
     learning_rate: 1e-3
     seed: 25
     classes_num: 4

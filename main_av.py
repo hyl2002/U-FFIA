@@ -70,11 +70,11 @@ if __name__ == '__main__':
                               classes_num=classes_num, fusion_type='MBT')
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-    train_loader = get_dataloader(split='train', batch_size=batch_size, seed=seed, epoch=0,sample_rate=sample_rate, num_workers=8, drop_last=True)
+    train_loader = get_dataloader(split='train', batch_size=batch_size, seed=seed, epoch=0,sample_rate=sample_rate, num_workers=4, drop_last=True)
     test_loader = get_dataloader(split='test', batch_size=batch_size, seed=seed, epoch=0,
-                                 sample_rate=sample_rate, num_workers=8)
+                                 sample_rate=sample_rate, num_workers=4)
     val_loader = get_dataloader(split='val', batch_size=batch_size, seed=seed, epoch=0,
-                                sample_rate=sample_rate, num_workers=8)
+                                sample_rate=sample_rate, num_workers=4)
     logger.info(config)
     logger.info(model)
     logger.info(f"{modality} modality experiments running on {device}")

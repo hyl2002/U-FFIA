@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import torch.optim as optim
 import torch
@@ -84,7 +86,7 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
     # ------------------------- 测试 best model -------------------------
     logger.info('Evaluate on the Test dataset')
     model_path = os.path.join(ckpt_dir, 'atten8_best.pt')
-    model.load_state_dict(torch.load(model_path)['model_state_dict'])
+    model.load_state_dict(torch.load(model_path, weights_only=False)['model_state_dict'])
     model.eval()
 
     test_statistics = evaluator.evaluate_av(test_loader)
@@ -92,7 +94,7 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
     ConfusionMatrixDisplay(test_cm).plot()
     plt.title("confusion_matrix_test")
     plt.savefig(os.path.join(image_dir, 'test-{}.png'.format(epoch)))
-
+    plt.close()
     ave_precision = np.mean(test_statistics['average_precision'])
     ave_acc = np.mean(test_statistics['accuracy'])
     logger.info(f' test_dataset mAP: {ave_precision}, accuracy: {ave_acc}')

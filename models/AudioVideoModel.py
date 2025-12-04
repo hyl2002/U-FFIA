@@ -14,7 +14,7 @@ class Audio_video_Model(nn.Module):
         self.fusion_type = fusion_type
         self.num_class = classes_num
         self.video_encoder = video_backbone
-        old_pretrained_video_encoder = torch.load('/root/shared-nvme/weights/audio-visual_pretrainedmodel/video_best.pt')['model_state_dict']
+        old_pretrained_video_encoder = torch.load('/home/dzz/codes/hyl/weights/audio-visual_pretrainedmodel/audio-visual_pretrainedmodel/video_best.pt',weights_only=False)['model_state_dict']
         dict_new = self.video_encoder.state_dict().copy()
         pretrained_video_encoder = {k.replace('backbone.', ''): v for k,v in old_pretrained_video_encoder.items()}
         trained_list = [i for i in pretrained_video_encoder.keys() if not ('head' in i or 'pos' in i)]
@@ -24,7 +24,7 @@ class Audio_video_Model(nn.Module):
 
         self.audio_encoder = audio_backbone
         self.audio_frontend = audio_frontend
-        old_pretrained_audio_encoder = torch.load('/root/shared-nvme/weights/audio-visual_pretrainedmodel/audio_best.pt')['model_state_dict']
+        old_pretrained_audio_encoder = torch.load('/home/dzz/codes/hyl/weights/audio-visual_pretrainedmodel/audio-visual_pretrainedmodel/audio_best.pt',weights_only=False)['model_state_dict']
         dict_new = self.audio_encoder.state_dict().copy()
         dict_new_frontend = self.audio_frontend.state_dict().copy()
         pretrained_audio_encoder = {k.replace('backbone.', ''): v for k,v in old_pretrained_audio_encoder.items()}
@@ -142,20 +142,26 @@ class Audio_video_Model(nn.Module):
             video_embedding = self.att_linear(video_embed)  # video_embedding[20, 36, 512]
             audio_embedding = self.att_linear(audio_embed)  # audio_embedding[20, 6, 512]
             fused_video_embedding = torch.cat((video_embedding, self.Bottleneck), dim=1)  # size[20, 40, 512]
+            # for layer in self.layers:
+            #     fused_video_embedding = layer(fused_video_embedding, s_mask=None)
+            #
+            # video_output = fused_video_embedding
             for layer in self.layers:
-                fused_video_embedding = layer(fused_video_embedding, s_mask=None)
-            
-            video_output = fused_video_embedding
+                video_output = layer(fused_video_embedding, s_mask=None)
             Bottleneck_fused = video_output[:, 36:, :]  # size[20, 6, 512]
             video_fused = video_output[:, :36, :]
             
             fused_audio_embedding = torch.cat((audio_embedding, Bottleneck_fused), dim=1)
+            # for layer in self.layers:
+            #     fused_audio_embedding = layer(fused_audio_embedding, s_mask=None)  # [20, 10, 512]
+            #
             for layer in self.layers:
-                fused_audio_embedding = layer(fused_audio_embedding, s_mask=None)  # [20, 10, 512]
-            
+                output = layer(fused_audio_embedding, s_mask=None)  # [20, 10, 512]
             output = fused_audio_embedding
-            # Bottleneck_fused = output[:, 6:, :] 
+            Bottleneck_fused = output[:, 6:, :]
             audio_fused = output[:, :6, :]
+            # Bottleneck_fused = output[:, 6:, :] 
+            # audio_fused = output[:, :6, :]
             # dec_output, dec_slf_attn = self.slf_attn(
             #     video_embedding, self.Bottleneck, self.Bottleneck, mask=None)
             # Bottleneck_fused = dec_output[:, 36:, :]  # size[10, 6, 512]

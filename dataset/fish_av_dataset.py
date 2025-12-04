@@ -32,7 +32,8 @@ def get_video_name(split='strong'):
         middle, none, strong, weak
     """
     # path = '/mnt/fast/nobackup/scratch4weeks/mc02229/video_dataset'
-    path = '/root/shared-nvme/video_dataset'
+    # path = '/root/shared-nvme/video_dataset'
+    path = '/media/dzz/3C4216A3421661C6/video_dataset'
     video = []
     l1 = os.listdir(path)
     for dir in l1:
@@ -167,16 +168,16 @@ class Fish_Video_Dataset(Dataset):
         return len(self.data_dict)
 
     def __getitem__(self, index):
-        save_path = '/root/shared-nvme/Fish_video_dataset/Fish_video_1/'
-        
-        #################################################
+        # save_path = '/root/shared-nvme/Fish_video_dataset/Fish_video_1/'
+        save_path = '/home/dzz/codes/hyl/Fish_video_dataset/Fish_video_1/'
+        # ###############################################
         # video_name, target = self.data_dict[index]
         # target = np.eye(4)[target]
         # # random sample one frame from video
         # vr = decord.VideoReader(video_name, height=250, width=250)
         # full_vid_length = len(vr)
         # video_frames = vr.get_batch(range(0, full_vid_length))
-        # #修改为一个视频等间隔帧数抽取16帧
+        # # 修改为一个视频等间隔帧数抽取16帧
         # # sample 20 frames evenly across the video
         # if full_vid_length >= 20:
         #     # get 20 indices evenly spaced from 0 to full_vid_length-1
@@ -187,7 +188,7 @@ class Fish_Video_Dataset(Dataset):
         #     Y = np.resize(base_idx, 20)
         # vf = video_frames[Y, ...]
         # vf = self.video_transform(vf)
-        #################################################
+        # #################################################
         # data_dict = {'video_name': video_name, 'video_form': vf, 'target': target}
         # os.makedirs(os.path.join(save_path, str(self.epoch), self.split), exist_ok=True)
         # save_pickle(data_dict, os.path.join(save_path, str(self.epoch), self.split, '%s.pkl' % index))
