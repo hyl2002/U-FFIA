@@ -36,16 +36,30 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
     ws.append(["epoch", "train_loss", "val_acc", "val_mAP", "test_acc", "test_mAP","val_recall","val_f1"])  # 表头
 
     for epoch in range(max_epoch):
+        debug_print = (epoch == 0)  # 只在第一个 epoch 打印一次
         mean_loss = 0
         for data_dict in tqdm(train_loader):
             data_dict['video_form'] = data_dict['video_form'].to(device)
             data_dict['waveform'] = data_dict['waveform'].to(device)
             data_dict['target'] = data_dict['target'].to(device)
             model.train()
-
             output_dict1 = model(data_dict['waveform'], data_dict['video_form'])
             target_dict = {'target': data_dict['target']}
+            # # ---------------- Debug 信息，只打印一次 ----------------
+            # if debug_print:
+            #     print("\n================ Debug Info ================")
+            #     print("Target shape:", data_dict['target'].shape)
+            #     print("Target example:", data_dict['target'])
+            #     print("--------------------------------------------")
+            #     print("Output shape:", output_dict1['clipwise_output'].shape)
+            #     print("Output example (logits):", output_dict1['clipwise_output'][0])
+            #     print("--------------------------------------------")
             loss = loss_func(output_dict1, target_dict)
+            # if debug_print:
+            #     print("Loss value:", loss.item())
+            #     print("============================================\n")
+            #     debug_print = False
+            # # --------------------------------------------------------
 
             loss.backward()
             optimizer.step()
@@ -54,6 +68,8 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
 
         epoch_loss = mean_loss / len(train_loader)
         logger.info(f"Training loss {epoch_loss} at epoch {epoch}")
+
+
 
         if epoch % 1 == 0:
             model.eval()

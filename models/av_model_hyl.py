@@ -65,7 +65,7 @@ class Audio_video_Model(nn.Module):
             n_layers = 4
             drop_prob = 0.1
             ffn_hidden = 2048
-            self.Bottleneck = nn.Parameter(torch.randn(20, 4, 512))
+            self.Bottleneck = nn.Parameter(torch.randn(20, 2, 512))
             self.layers = nn.ModuleList([EncoderLayer(d_model=d_model,
                                                       ffn_hidden=ffn_hidden,
                                                       n_head=n_head,
@@ -149,56 +149,26 @@ class Audio_video_Model(nn.Module):
             # video_output = fused_video_embedding
 
 
+
             for layer in self.layers:
                 video_output = layer(fused_video_embedding, s_mask=None)  # hyl size[20, 74, 512]
-                # fused_video_embedding= layer(fused_video_embedding, s_mask=None)  # hyl size[20, 74, 512]
-            Bottleneck_fused = video_output[:, 72:, :]  # size[20, 6, 512]
-            video_fused = fused_video_embedding[:, :72, :]  #size [20, 36, 512]
-            fused_audio_embedding = torch.cat((audio_embedding, Bottleneck_fused), dim=1)  #size [20, 10, 512]
+            Bottleneck_fused = video_output[:, 36:, :]  # size[20, 6, 512]
+            video_fused = video_output[:, :36, :]  #size [20, 36, 512]
+            fused_audio_embedding = torch.cat((audio_embedding, Bottleneck_fused), dim=1)  #size [20, 46, 512]
 
-
-
-
-
-            # ------------------------------------------------------------------------------------------
-            # for layer in self.layers:
-            #     video_output = layer(fused_video_embedding, s_mask=None)  # hyl size[20, 74, 512]
-            # Bottleneck_fused = video_output[:, 36:, :]  # size[20, 6, 512]
-            # video_fused = video_output[:, :36, :]  #size [20, 36, 512]
-            # fused_audio_embedding = torch.cat((audio_embedding, Bottleneck_fused), dim=1)  #size [20, 46, 512]
-            # ------------------------------------------------------------------------------------------
-
-
-
-            # for layer in self.layers:
-            #     fused_audio_embedding = layer(fused_audio_embedding, s_mask=None)  # [20, 10, 512]
-            #
-            ##   hyl ################
             for layer in self.layers:
-                output = layer(fused_audio_embedding, s_mask=None)  # [20, 46, 512]
-                # fused_audio_embedding = layer(fused_audio_embedding, s_mask=None)  # [20, 10, 512]
-            output = fused_audio_embedding
-            Bottleneck_fused = output[:, 8:, :]
-            audio_fused = output[:, :8, :]
-            ##   hyl ################
-
-
-#------------------------------------------------------------------------------------------
-            # for layer in self.layers:
-            #     output = layer(fused_audio_embedding, s_mask=None)  # [20, 46, 512]
-            # output = fused_audio_embedding
+                output = layer(fused_audio_embedding, s_mask=None)  #size [20, 46, 512]
+            output = fused_audio_embedding    #size [20, 46, 512]
+            Bottleneck_fused = output[:, 6:, :] #size [20, 40, 512]
+            audio_fused = output[:, :6, :]  #size [20, 6, 512]
             # Bottleneck_fused = output[:, 6:, :]
-            # audio_fused = output[:, :6, :]
-  # ------------------------------------------------------------------------------------------
-
-            # Bottleneck_fused = output[:, 6:, :] 
             # audio_fused = output[:, :6, :]
             # dec_output, dec_slf_attn = self.slf_attn(
             #     video_embedding, self.Bottleneck, self.Bottleneck, mask=None)
             # Bottleneck_fused = dec_output[:, 36:, :]  # size[10, 6, 512]
             # dec_enc_output, dec_enc_attn = self.enc_attn(
             #     dec_output, Bottleneck_fused, Bottleneck_fused, mask=None)
-            fused_embedding = torch.cat((audio_fused, video_fused), dim=1)
+            fused_embedding = torch.cat((audio_fused, video_fused), dim=1)    #[20, 42, 512]
             output = torch.mean(fused_embedding, 1)
             clipwise_output = self.fusion_linear_B(output)
             output_dict = {'clipwise_output': clipwise_output}

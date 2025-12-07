@@ -170,7 +170,7 @@ class Fish_Video_Dataset(Dataset):
     def __getitem__(self, index):
         # save_path = '/root/shared-nvme/Fish_video_dataset/Fish_video_1/'
         save_path = '/home/dzz/codes/hyl/Fish_video_dataset/Fish_video_1/'
-        # ###############################################
+        # # ###############################################
         # video_name, target = self.data_dict[index]
         # target = np.eye(4)[target]
         # # random sample one frame from video
