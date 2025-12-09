@@ -72,7 +72,7 @@ class Audio_video_Model(nn.Module):
                                                       drop_prob=drop_prob)
                                          for _ in range(n_layers)])
             # self.slf_attn = MultiHeadAttention(n_head=1, d_model=512, d_k=512, d_v=512, dropout=0.1)
-            # self.enc_attn = MultiHeadAttention(n_head=1, d_model=512, d_k=512, d_v=512, dropout=0.1)
+            self.enc_attn = MultiHeadAttention(n_head=1, d_model=512, d_k=512, d_v=512, dropout=0.1)
             self.fusion_linear_B = nn.Linear(512, 4)
 
     def forward(self, audio, video):
@@ -139,9 +139,9 @@ class Audio_video_Model(nn.Module):
         elif self.fusion_type == 'MBT':
             _, video_embed = self.video_encoder(video)
             _, audio_embed = self.audio_encoder(self.audio_frontend(audio))
-            video_embedding = self.att_linear(video_embed)  # video_embedding[20, 36, 512]  #video_embedding[20,72,512]
-            audio_embedding = self.att_linear(audio_embed)  # audio_embedding[20, 6, 512]   #audio_embedding[20, 8, 512]
-            fused_video_embedding = torch.cat((video_embedding, self.Bottleneck), dim=1)  # size[20, 40, 512] # size[20, 74, 512]
+            video_embedding = self.att_linear(video_embed)  #  #video_embedding[20,72,512]
+            audio_embedding = self.att_linear(audio_embed)  #    #audio_embedding[20, 8, 512]
+            fused_video_embedding = torch.cat((video_embedding, self.Bottleneck), dim=1)  # size[20, 74, 512]
             # print("fused_video_embedding", fused_video_embedding.shape)
             # for layer in self.layers:
             #     fused_video_embedding = layer(fused_video_embedding, s_mask=None)
@@ -198,8 +198,21 @@ class Audio_video_Model(nn.Module):
             # Bottleneck_fused = dec_output[:, 36:, :]  # size[10, 6, 512]
             # dec_enc_output, dec_enc_attn = self.enc_attn(
             #     dec_output, Bottleneck_fused, Bottleneck_fused, mask=None)
+
+
+
             fused_embedding = torch.cat((audio_fused, video_fused), dim=1)
-            output = torch.mean(fused_embedding, 1)
+            # 2025-12-7
+            cross_att_output, attn_map = self.enc_attn(
+                fused_embedding,  # Q
+                fused_embedding ,  # K
+                fused_embedding,  # V
+                mask=None
+            )
+            output = torch.mean(cross_att_output, 1)
+            # 2025-12-7
+
+            # output = torch.mean(fused_embedding, 1)
             clipwise_output = self.fusion_linear_B(output)
             output_dict = {'clipwise_output': clipwise_output}
 
