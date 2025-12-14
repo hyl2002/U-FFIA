@@ -32,8 +32,8 @@ def get_video_name(split='strong'):
         middle, none, strong, weak
     """
     # path = '/mnt/fast/nobackup/scratch4weeks/mc02229/video_dataset'
-    # path = '/root/shared-nvme/video_dataset'
-    path = '/media/dzz/3C4216A3421661C6/video_dataset'
+    path = '/root/shared-nvme/video_dataset'
+    # path = '/media/dzz/3C4216A3421661C6/video_dataset'
     video = []
     l1 = os.listdir(path)
     for dir in l1:
@@ -168,9 +168,9 @@ class Fish_Video_Dataset(Dataset):
         return len(self.data_dict)
 
     def __getitem__(self, index):
-        # save_path = '/root/shared-nvme/Fish_video_dataset/Fish_video_1/'
-        save_path = '/home/dzz/codes/hyl/Fish_video_dataset/Fish_video_1/'
-        # # ###############################################
+        save_path = '/root/shared-nvme/Fish_video_dataset/Fish_video_1/'
+        # save_path = '/home/dzz/codes/hyl/Fish_video_dataset/Fish_video_1/'
+        # ###############################################
         # video_name, target = self.data_dict[index]
         # target = np.eye(4)[target]
         # # random sample one frame from video

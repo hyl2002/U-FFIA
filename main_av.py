@@ -14,7 +14,7 @@ import logging as log_config
 import argparse
 from tasks.av_task import trainer
 from omegaconf import OmegaConf
-
+from utils.warmupCosineScheduler import WarmupCosineScheduler
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser.')
@@ -69,16 +69,38 @@ if __name__ == '__main__':
     model = Audio_video_Model(audio_frontend=frontend, audio_backbone=audio_backbone, video_backbone=video_backbone,
                               classes_num=classes_num, fusion_type='MBT')
     model = model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-    train_loader = get_dataloader(split='train', batch_size=batch_size, seed=seed, epoch=0,sample_rate=sample_rate, num_workers=4, drop_last=True)
+
+    # optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
+    # ------------------------------------------------------
+    # ★★ 修改点 1：给 optimizer 的 param group 添加 name
+    # ------------------------------------------------------
+    optimizer = optim.Adam(
+        [{"params": model.parameters(), "lr": learning_rate, "name": "default"}],
+        betas=(0.9, 0.999)
+    )
+
+
+
+    train_loader = get_dataloader(split='train', batch_size=batch_size, seed=seed, epoch=0,sample_rate=sample_rate, num_workers=8, drop_last=True)
     test_loader = get_dataloader(split='test', batch_size=batch_size, seed=seed, epoch=0,
-                                 sample_rate=sample_rate, num_workers=4)
+                                 sample_rate=sample_rate, num_workers=8)
     val_loader = get_dataloader(split='val', batch_size=batch_size, seed=seed, epoch=0,
-                                sample_rate=sample_rate, num_workers=4)
+                                sample_rate=sample_rate, num_workers=8)
+    # ------------------------------------------------------
+    # ★★ 修改点 2：创建 scheduler
+    # ------------------------------------------------------
+    iter_per_epoch = len(train_loader)
+    scheduler = WarmupCosineScheduler(
+        optimizer,
+        warmup_epochs=5,         # 可调，一般 5–10 都行
+        num_epochs=200,             #设置为60 加速收敛
+        iter_per_epoch=iter_per_epoch,
+        cosine_decay=True
+    )
     logger.info(config)
     logger.info(model)
     logger.info(f"{modality} modality experiments running on {device}")
     logger.info(f"Training dataloader: {len(train_loader)* batch_size} samples")
     logger.info(f"Val dataloader: {len(val_loader)* batch_size} samples")
     logger.info(f"Test dataloader: {len(test_loader)* batch_size} samples")
-    trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, device, ckpt_dir, image_dir)
+    trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, device, ckpt_dir, image_dir, scheduler)

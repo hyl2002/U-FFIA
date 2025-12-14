@@ -18,19 +18,18 @@ import argparse
 from utils.early_stopping import save_model
 from tqdm import tqdm
 from utils.early_stopping import save_model
-from openpyxl import Workbook
+from openpyxl import Workbook   # ★ 新增
 
 def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, device, ckpt_dir, image_dir, scheduler):
     logger = log_config.getLogger()
     logger.info("Starting new training run")
-    
-    # ========================== 【★ 修改点 1：定义多种损失函数】 ==========================
-    # 1. 分类损失 (带标签平滑)
-    cls_criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-    # 2. 重建损失 (均方误差)
-    mse_criterion = nn.MSELoss()
-    # =================================================================================
-
+    # ========================== 【★ 修改点 1】 ==========================
+    # 原代码：loss_func = get_loss_func('clip_ce')
+    # 新代码：使用 PyTorch 自带的 CrossEntropyLoss 并开启 label_smoothing
+    # label_smoothing=0.1 意味着正确标签的目标概率是 0.9，而不是 1.0
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+    # ================================================================
+    loss_func = get_loss_func('clip_ce')
     evaluator = Evaluator(model=model)
     best_acc = 0
     best_epoch = 0
@@ -45,44 +44,53 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
     for epoch in range(max_epoch):
         debug_print = (epoch == 0)  # 只在第一个 epoch 打印一次
         mean_loss = 0
-        
+        # ★ 每个 epoch 开头打印一次学习率
         current_lr = optimizer.param_groups[0]['lr']
         print(f"\n==== Epoch {epoch} | Learning Rate = {current_lr} ====\n")
-        
         for data_dict in tqdm(train_loader):
             data_dict['video_form'] = data_dict['video_form'].to(device)
             data_dict['waveform'] = data_dict['waveform'].to(device)
             data_dict['target'] = data_dict['target'].to(device)
-            
             model.train()
-            # 模型 forward，返回的 output_dict1 包含了分类logits和重建所需的特征
             output_dict1 = model(data_dict['waveform'], data_dict['video_form'])
-            
-            # ========================== 【★ 修改点 2：计算多任务 Loss】 ==========================
-            # 1. 计算主分类 Loss
-            loss_cls = cls_criterion(output_dict1['clipwise_output'], data_dict['target'])
-            
-            # 2. 计算音频重建 Loss (预测值 vs 真实值)
-            loss_rec_a = mse_criterion(output_dict1['recon_a'], output_dict1['target_a'])
-            
-            # 3. 计算视频重建 Loss (预测值 vs 真实值)
-            loss_rec_v = mse_criterion(output_dict1['recon_v'], output_dict1['target_v'])
-            
-            # 4. 总 Loss = 分类 + 权重 * (重建A + 重建V)
-            # 权重 0.5 是经验值，可以根据情况微调
-            loss = loss_cls + 0.5 * (loss_rec_a + loss_rec_v)
-            # ====================================================================================
+            # target_dict = {'target': data_dict['target']}
+            # # ---------------- Debug 信息，只打印一次 ----------------
+            # if debug_print:
+            #     print("\n================ Debug Info ================")
+            #     print("Target shape:", data_dict['target'].shape)
+            #     print("Target example:", data_dict['target'])
+            #     print("--------------------------------------------")
+            #     print("Output shape:", output_dict1['clipwise_output'].shape)
+            #     print("Output example (logits):", output_dict1['clipwise_output'][0])
+            #     print("--------------------------------------------")
+            # loss = loss_func(output_dict1, target_dict)
+            # if debug_print:
+            #     print("Loss value:", loss.item())
+            #     print("============================================\n")
+            #     debug_print = False
 
+            # # --------------------------------------------------------
+                      # ========================== 【★ 修改点 2】 ==========================
+            # 原代码：loss = loss_func(output_dict1, target_dict)
+            # 新代码：手动提取 logits 和 target 进行计算
+            # output_dict1['clipwise_output'] 是模型的预测输出
+            # data_dict['target'] 是真实标签
+            
+            logits = output_dict1['clipwise_output']
+            targets = data_dict['target']
+            loss = criterion(logits, targets)
+            # ================================================================
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
-            scheduler.step() 
+            scheduler.step()  # ★ 新增：更新学习率
             optimizer.zero_grad()
-            
             mean_loss += loss.item()
 
         epoch_loss = mean_loss / len(train_loader)
         logger.info(f"Training loss {epoch_loss} at epoch {epoch}")
+
+
 
         if epoch % 1 == 0:
             model.eval()
@@ -90,16 +98,15 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
             val_cm = val_statistics['confu_matrix']
             val_mAP = np.mean(val_statistics['average_precision'])
             val_acc = np.mean(val_statistics['accuracy'])
-            val_recall = val_statistics['recall']
-            val_f1 = val_statistics['f1']
-            
-            # 注意：如果验证集也需要计算重建 Loss 来观察泛化能力，
-            # 需要修改 evaluate_av 函数。目前只关注分类准确率即可。
+            val_recall = val_statistics['recall']  # 新增
+            val_f1 = val_statistics['f1']          # 新增
+            val_message = val_statistics['message']
 
             if val_acc > best_acc:
                 best_epoch = epoch
                 best_acc = val_acc
                 best_mAP = val_mAP
+                best_cm = val_cm
                 save_model(os.path.join(ckpt_dir, 'atten8_best.pt'), model, optimizer, val_acc, best_epoch)
 
             # 保存最后 5 轮模型
@@ -110,10 +117,11 @@ def trainer(model, optimizer, train_loader, val_loader, test_loader, max_epoch, 
 
             model.train()
 
-            # --------------- 写入 Excel ---------------
+            # --------------- 写入 Excel（测试值暂空） ---------------
             ws.append([epoch, epoch_loss, val_acc, val_mAP, None, None, val_recall, val_f1])
 
         logger.info(f'val_best_acc: {best_acc}, best mAP:{best_mAP}, best_epoch: {best_epoch}, current_val_acc: {val_acc},f1: {val_f1},recall: {val_recall}')
+
 
     # ------------------------- 测试 best model -------------------------
     logger.info('Evaluate on the Test dataset')
